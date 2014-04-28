@@ -28,7 +28,7 @@ function Set-PoshWSUSConfigSyncSchedule {
 	
     .EXAMPLE
 		[System.TimeSpan]$TimeSnap = New-TimeSpan -Hours 18 
-        Set-PoshWSUSConfigSyncSchedule -SynchronizeAutomatically $true -SynchronizeAutomaticallyTimeOfDay $TimeSnap -NumberOfSynchronizationsPerDay 2
+        Set-PoshWSUSConfigSyncSchedule -SynchronizeAutomatically -SynchronizeAutomaticallyTimeOfDay $TimeSnap -NumberOfSynchronizationsPerDay 2
 
         Description
         -----------
@@ -36,7 +36,7 @@ function Set-PoshWSUSConfigSyncSchedule {
 
     .EXAMPLE
 		[System.TimeSpan]$TimeSnap = New-TimeSpan -Hours 4  -Minutes 30
-        Set-PoshWSUSConfigSyncSchedule -SynchronizeAutomatically $true -SynchronizeAutomaticallyTimeOfDay $TimeSnap -NumberOfSynchronizationsPerDay 3
+        Set-PoshWSUSConfigSyncSchedule -SynchronizeAutomatically -SynchronizeAutomaticallyTimeOfDay $TimeSnap -NumberOfSynchronizationsPerDay 3
 
         Description
         -----------
@@ -49,6 +49,10 @@ function Set-PoshWSUSConfigSyncSchedule {
 		Name: Set-PoshWSUSConfigSyncSchedule
         Author: Dubinsky Evgeny
         DateCreated: 1DEC2013
+        Modified 05 Feb 2014 -- boe Prox
+            -Changed [bool] param types to [switch] to align with best practices
+            -Add -WhatIf support
+            -Removed Begin, Process, End as no pipeline support defined
 
 	.LINK
 		http://blog.itstuff.in.ua/?p=62#Set-PoshWSUSConfigSyncSchedule
@@ -59,29 +63,27 @@ function Set-PoshWSUSConfigSyncSchedule {
     Param
     (
         [Parameter(Position = 0,Mandatory=$true)]
-        [Boolean]$SynchronizeAutomatically,
+        [switch]$SynchronizeAutomatically,
         [System.TimeSpan]$SynchronizeAutomaticallyTimeOfDay,
         [ValidateRange(1, 24)][int]
         $NumberOfSynchronizationsPerDay
     )
 
-    Begin
+    if($wsus)
     {
-        if($wsus)
-        {
-            $subscription = $wsus.GetSubscription()
-        }#endif
-        else
-        {
-            Write-Warning "Use Connect-PoshWSUSServer for establish connection with your Windows Update Server"
-            Break
-        }
+        Write-Warning "Use Connect-PoshWSUSServer for establish connection with your Windows Update Server"
+        Break
     }
-    Process
-    {        
+
+    $config = $wsus.GetConfiguration()
+    $config.ServerId = [System.Guid]::NewGuid()
+    $config.Save()
+
+    If ($PSCmdlet.ShouldProcess($wsus.ServerName,'Set Sync Schedule')) {
+        $subscription = $wsus.GetSubscription()       
         if ($SynchronizeAutomatically)
         {
-            $subscription.SynchronizeAutomatically = $SynchronizeAutomatically
+            $subscription.SynchronizeAutomatically = $True
             
             if ($PSBoundParameters['SynchronizeAutomaticallyTimeOfDay'])
             {
@@ -106,9 +108,6 @@ function Set-PoshWSUSConfigSyncSchedule {
         {
             $subscription.SynchronizeAutomatically = $false
         }#endElse
-    }#endProcess
-    End
-    {
         $subscription.Save()
     }
 }

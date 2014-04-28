@@ -17,6 +17,8 @@ function Get-PoshWSUSConfigProxyServer {
 		Name: Get-PoshWSUSConfigProxyServer
         Author: Dubinsky Evgeny
         DateCreated: 1DEC2013
+        Modified: 06 Feb 2014 -- Boe Prox
+            -Removed instances where set actions are occuring
 
 	.LINK
         http://blog.itstuff.in.ua/?p=62#Get-PoshWSUSConfigProxyServer
@@ -24,29 +26,19 @@ function Get-PoshWSUSConfigProxyServer {
 
     [CmdletBinding()]
     Param()
-
-    Begin
+    if( -NOT $wsus)
     {
-        if($wsus)
-        {
-            $config = $wsus.GetConfiguration()
-            $config.ServerId = [System.Guid]::NewGuid()
-            $config.Save()
-        }#endif
-        else
-        {
-            Write-Warning "Use Connect-PoshWSUSServer for establish connection with your Windows Update Server"
-            Break
-        }
+        Write-Warning "Use Connect-PoshWSUSServer for establish connection with your Windows Update Server"
+        Break
     }
-    Process
-    { 
-        Write-Verbose "Getting proxy server configuration"
-        $wsus.GetConfiguration() | select UseProxy, ProxyName, ProxyServerPort, `
-                                          ProxyUserDomain, ProxyUserName, `
-                                          HasProxyPassword, AllowProxyCredentialsOverNonSsl, `
-                                          AnonymousProxyAccess, SslProxyName, `
-                                          SslProxyServerPort, UseSeparateProxyForSsl
-    }
-    End{}
+    $config = $wsus.GetConfiguration()
+    $config.ServerId = [System.Guid]::NewGuid()
+    $config.Save()
+
+    Write-Verbose "Getting proxy server configuration"
+    $config | select UseProxy, ProxyName, ProxyServerPort, `
+                        ProxyUserDomain, ProxyUserName, `
+                        HasProxyPassword, AllowProxyCredentialsOverNonSsl, `
+                        AnonymousProxyAccess, SslProxyName, `
+                        SslProxyServerPort, UseSeparateProxyForSsl
 }

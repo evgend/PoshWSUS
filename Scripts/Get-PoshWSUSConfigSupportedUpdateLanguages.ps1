@@ -23,6 +23,8 @@ function Get-PoshWSUSConfigSupportedUpdateLanguages {
         Name: Get-PoshWSUSConfigSupportedUpdateLanguages
         Author: Dubinsky Evgeny
         DateCreated: 1DEC2013
+        Modified: 06 Feb 2014 -- Boe Prox
+            -Removed instances where set actions are occuring
 
 	.LINK
 		http://blog.itstuff.in.ua/?p=62#Get-PoshWSUSConfigSupportedUpdateLanguages
@@ -34,30 +36,17 @@ function Get-PoshWSUSConfigSupportedUpdateLanguages {
     #>
 
     [CmdletBinding()]
-    Param
-    (
-    )
-
-    Begin
+    Param()
+    if( -NOT $wsus)
     {
-        if($wsus)
-        {
-            $config = $wsus.GetConfiguration()
-            $config.ServerId = [System.Guid]::NewGuid()
-            $config.Save()
-        }#endif
-        else
-        {
-            Write-Warning "Use Connect-PoshWSUSServer for establish connection with your Windows Update Server"
-            Break
-        }
-    }
-    Process
-    { 
-        Write-Verbose "Getting WSUS Supported Update Languages"
-        $config.SupportedUpdateLanguages -as [System.Collections.Specialized.StringCollection]
-    }
-    End{
-        
-    }
+        Write-Warning "Use Connect-PoshWSUSServer for establish connection with your Windows Update Server"
+        Break
+    } 
+    
+    $config = $wsus.GetConfiguration()
+    $config.ServerId = [System.Guid]::NewGuid()
+    $config.Save()
+
+    Write-Verbose "Getting WSUS Supported Update Languages"
+    $config.SupportedUpdateLanguages
 }

@@ -10,6 +10,9 @@
         Name: Get-PoshWSUSConfigSyncUpdateCategories
         Author: Dubinsky Evgeny
         DateCreated: 10MAY2013
+        Modified: 05 Feb 2014 -- Boe Prox
+            -Modified If statement
+            -Removed Begin, Process, End
 
     .EXAMPLE
        Get-PoshWSUSConfigSyncUpdateClassifications
@@ -24,18 +27,13 @@
     [CmdletBinding(DefaultParameterSetName = 'Null')]
     Param()
 
-    Begin {}
-    Process
+
+    if ( -NOT $wsus)
     {
-        if ($wsus)
-        {
-            $wsus.GetSubscription().GetUpdateClassifications()
-        }
-        else
-        {
-            Write-Warning "Use Connect-PoshWSUSServer for establish connection with your Windows Update Server"
-            Break
-        }
+        Write-Warning "Use Connect-PoshWSUSServer for establish connection with your Windows Update Server"
+        Break
     }
-    End{}
+    $wsus.GetSubscription().GetUpdateClassifications()
+
+
 }

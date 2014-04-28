@@ -28,28 +28,28 @@ function Set-PoshWSUSConfigUpdateSource {
         Sets whether the WSUS server is a replica server. $true if the WSUS server is a replica server, otherwise $false. 
 
 	.EXAMPLE
-		Set-PoshWSUSConfigUpdateSource -SyncFromMicrosoftUpdate $false -UpstreamWsusServerName "windowsupdate.corp.local" -UpstreamWsusServerPortNumber "8530"
+		Set-PoshWSUSConfigUpdateSource -UpstreamWsusServerName "windowsupdate.corp.local" -UpstreamWsusServerPortNumber "8530"
 
         Description
         -----------
         Download update from upstream wsus server.
 	
     .EXAMPLE
-        Set-PoshWSUSConfigUpdateSource -SyncFromMicrosoftUpdate $false -UpstreamWsusServerName "windowsupdate.corp.local" -UpstreamWsusServerPortNumber "8531" -UpstreamWsusServerUseSsl $true -IsReplicaServer $true
+        Set-PoshWSUSConfigUpdateSource -UpstreamWsusServerName "windowsupdate.corp.local" -UpstreamWsusServerPortNumber "8531" -UpstreamWsusServerUseSsl $true -IsReplicaServer
         
         Description
         -----------
         Sets windowsupdate.corp.local the WSUS server is a replica server. Plus upstream server support SSL.
 
     .EXAMPLE
-        Set-PoshWSUSConfigUpdateSource -SyncFromMicrosoftUpdate $false -UpstreamWsusServerName "windowsupdate.corp.local" -UpstreamWsusServerPortNumber "8530" -IsReplicaServer $true
+        Set-PoshWSUSConfigUpdateSource -UpstreamWsusServerName "windowsupdate.corp.local" -UpstreamWsusServerPortNumber "8530" -IsReplicaServer
 
         Description
         -----------
         Sets windowsupdate.corp.local the WSUS server is a replica server. Sync Without SSL.
 
     .EXAMPLE
-        Set-PoshWSUSConfigUpdateSource -SyncFromMicrosoftUpdate $true 
+        Set-PoshWSUSConfigUpdateSource -SyncFromMicrosoftUpdate
         
         Description
         -----------
@@ -59,6 +59,10 @@ function Set-PoshWSUSConfigUpdateSource {
 		Name: Set-PoshWSUSConfigUpdateSource
         Author: Dubinsky Evgeny
         DateCreated: 1DEC2013
+        Modified 05 Feb 2014 -- Boe Prox
+            -Switched [bool] parameter types to [switch] to align with best practices
+            -Removed Begin,Process, End as no params support pipeline
+            -Added -WhatIf support
 
     .LINK
         http://blog.itstuff.in.ua/?p=62#Set-PoshWSUSConfigUpdateSource
@@ -78,59 +82,55 @@ function Set-PoshWSUSConfigUpdateSource {
     .LINK
         http://msdn.microsoft.com/en-us/library/windows/desktop/microsoft.updateservices.administration.iupdateserverconfiguration.upstreamwsusserverusessl(v=vs.85).aspx
 
-	.LINK
-		http://blog.itstuff.in.ua
-
 #>
 
-    [CmdletBinding()]
+    [CmdletBinding(SupportsShouldProcess=$True)]
     Param
     (
-        [Parameter(Position = 0,Mandatory=$true)][Boolean]$SyncFromMicrosoftUpdate,
+        [Switch]$SyncFromMicrosoftUpdate,
         [string]$UpstreamWsusServerName,
         [ValidateRange(0, 65536)]
         [int]$UpstreamWsusServerPortNumber,
-        [Boolean]$UpstreamWsusServerUseSsl = $false,
-        [Boolean]$IsReplicaServer = $false
+        [Switch]$UpstreamWsusServerUseSsl,
+        [Switch]$IsReplicaServer
     )
 
-    Begin
+    if(-NOT $wsus)
     {
-        if($wsus)
-        {
-            $config = $wsus.GetConfiguration()
-            $config.ServerId = [System.Guid]::NewGuid()
-            $config.Save()
-        }#endif
-        else
-        {
-            Write-Warning "Use Connect-PoshWSUSServer for establish connection with your Windows Update Server"
-            Break
-        }
+        Write-Warning "Use Connect-PoshWSUSServer for establish connection with your Windows Update Server"
+        Break
     }
-    Process
-    {
-        $config.SyncFromMicrosoftUpdate = $SyncFromMicrosoftUpdate
+
+    $config = $wsus.GetConfiguration()
+    $config.ServerId = [System.Guid]::NewGuid()
+    $config.Save()
+
+    If ($PSCmdlet.ShouldProcess($wsus.ServerName,'UpdateConfigSource')) {
+        if($PSBoundParameters['SyncFromMicrosoftUpdate']) {
+            $config.SyncFromMicrosoftUpdate = $True
+        }
         
-        if($PSBoundParameters['SyncFromMicrosoftUpdate'] -eq $true)
+        if($PSBoundParameters['SyncFromMicrosoftUpdate'])
         {
             $config.IsReplicaServer = $false
         }#endif
+
         if($PSBoundParameters['UpstreamWsusServerName'] -and $PSBoundParameters['UpstreamWsusServerPortNumber'])
         {
             $config.UpstreamWsusServerName = $UpstreamWsusServerName
             $config.UpstreamWsusServerPortNumber = $UpstreamWsusServerPortNumber
         }#endif
         
-        # Default UpstreamWsusServerUseSsl equels $false
-        $config.UpstreamWsusServerUseSsl = $UpstreamWsusServerUseSsl
+        # Default UpstreamWsusServerUseSsl equals $false
+        if($PSBoundParameters['UpstreamWsusServerUseSsl']) {
+            $config.UpstreamWsusServerUseSsl = $True
+        }
         
-        # Default IsReplicaServer equels $false
-        $config.IsReplicaServer = $IsReplicaServer
+        # Default IsReplicaServer equals $false
+        if($PSBoundParameters['IsReplicaServer']) {
+            $config.IsReplicaServer = $True
+        }
         
-    }
-    End
-    {
         $config.Save()
     }
 }

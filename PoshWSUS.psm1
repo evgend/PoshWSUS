@@ -24,4 +24,15 @@ Try {
 } Catch {
     Write-Warning ("{0}: {1}" -f $Function,$_.Exception.Message)
     Continue
-}
+}   
+
+Write-Host "`n"
+Write-Host "`t`tPoshWSUS 2.2.1"
+Write-Host "`n"
+Write-Host -nonewline "Make initial connection to WSUS Server:`t"
+Write-Host -fore Yellow "Connect-PoshWSUSServer"
+Write-Host -nonewline "Disconnect from WSUS Server:`t`t"
+Write-Host -fore Yellow "Disconnect-PoshWSUSServer"
+Write-Host -nonewline "List all available commands:`t`t"
+Write-Host -fore Yellow "Get-PoshWSUSCommand"
+Write-Host "`n"
